@@ -1,0 +1,71 @@
+/* frontend/src/style.css */
+
+/* 🌈 General Layout */
+body {
+  background-color: #0d1117;
+  color: #e6edf3;
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* 💬 Chat Container */
+.chat-container {
+  max-width: 800px;
+  margin: 3rem auto;
+  padding: 1.5rem;
+  background: #161b22;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* 🧠 Chat Messages */
+.message {
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  line-height: 1.5;
+}
+
+.user {
+  background: #238636;
+  align-self: flex-end;
+  color: #fff;
+}
+
+.bot {
+  background: #30363d;
+  align-self: flex-start;
+  color: #c9d1d9;
+}
+
+/* 📝 Input Box */
+input[type="text"] {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 10px;
+  background-color: #21262d;
+  color: #e6edf3;
+}
+
+input[type="text"]:focus {
+  outline: 2px solid #2f81f7;
+}
+
+/* 🚀 Button */
+button {
+  background-color: #2f81f7;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #4695ff;
+}
