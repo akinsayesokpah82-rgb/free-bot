@@ -1,67 +1,105 @@
 import React, { useState } from "react";
 import ReactDOM from "react-dom/client";
-import "./style.css"; // ✅ Make sure this file exists
+import "./style.css";
 import axios from "axios";
 
 function App() {
-  const [messages, setMessages] = useState([
-    { role: "bot", text: "👋 Hi! I'm Free Bot — powered by Akin S. Sokpah. How can I help you today?" }
-  ]);
+  const [chats, setChats] = useState([{ id: 1, title: "New Chat", messages: [] }]);
+  const [activeChat, setActiveChat] = useState(1);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Your backend URL on Render
   const API_URL = window.location.origin + "/api/chat";
+
+  const currentChat = chats.find(c => c.id === activeChat);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const newMessages = [...messages, { role: "user", text: input }];
-    setMessages(newMessages);
+    const newMsg = { role: "user", text: input };
+    const updatedChats = chats.map(c =>
+      c.id === activeChat ? { ...c, messages: [...c.messages, newMsg] } : c
+    );
+    setChats(updatedChats);
     setInput("");
     setLoading(true);
 
     try {
       const res = await axios.post(API_URL, { message: input });
       const botReply = res.data.reply || "Sorry, I didn’t get that.";
-      setMessages([...newMessages, { role: "bot", text: botReply }]);
-    } catch (error) {
-      console.error(error);
-      setMessages([
-        ...newMessages,
-        { role: "bot", text: "⚠️ There was an error connecting to the server." },
-      ]);
+      const withReply = updatedChats.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, { role: "bot", text: botReply }] }
+          : c
+      );
+      setChats(withReply);
+    } catch (err) {
+      console.error(err);
+      const errChat = updatedChats.map(c =>
+        c.id === activeChat
+          ? { ...c, messages: [...c.messages, { role: "bot", text: "⚠️ Error connecting to server." }] }
+          : c
+      );
+      setChats(errChat);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKey = (e) => {
+  const handleKey = e => {
     if (e.key === "Enter") sendMessage();
   };
 
-  return (
-    <div className="chat-container">
-      <h2>🤖 Free Bot</h2>
-      <div className="chat-box">
-        {messages.map((m, i) => (
-          <div key={i} className={`message ${m.role}`}>
-            {m.text}
-          </div>
-        ))}
-        {loading && <div className="message bot">✍️ Thinking...</div>}
-      </div>
-      <input
-        type="text"
-        value={input}
-        placeholder="Type your message here..."
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKey}
-      />
-      <button onClick={sendMessage}>Send</button>
+  const newChat = () => {
+    const id = chats.length + 1;
+    setChats([...chats, { id, title: `Chat ${id}`, messages: [] }]);
+    setActiveChat(id);
+  };
 
-      <footer style={{ marginTop: "20px", fontSize: "0.8em", opacity: 0.7 }}>
-        Built by <b>Akin S. Sokpah</b> — powered by OpenAI
-      </footer>
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <h3>💬 Free Bot</h3>
+        <button className="new-chat-btn" onClick={newChat}>＋ New Chat</button>
+        <div className="chat-list">
+          {chats.map(c => (
+            <div
+              key={c.id}
+              className={`chat-item ${c.id === activeChat ? "active" : ""}`}
+              onClick={() => setActiveChat(c.id)}
+            >
+              {c.title}
+            </div>
+          ))}
+        </div>
+        <footer>By <b>Akin S. Sokpah</b></footer>
+      </aside>
+
+      <main className="chat-area">
+        <div className="chat-box">
+          {currentChat.messages.length === 0 && (
+            <div className="message bot">
+              👋 Hi! I'm Free Bot — your AI assistant. Ask me anything!
+            </div>
+          )}
+          {currentChat.messages.map((m, i) => (
+            <div key={i} className={`message ${m.role}`}>
+              {m.text}
+            </div>
+          ))}
+          {loading && <div className="message bot">✍️ Thinking...</div>}
+        </div>
+
+        <div className="input-area">
+          <input
+            type="text"
+            placeholder="Type your message..."
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+          />
+          <button onClick={sendMessage}>Send</button>
+        </div>
+      </main>
     </div>
   );
 }
