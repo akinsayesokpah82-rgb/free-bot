@@ -1,137 +1,73 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import axios from "axios";
 import "./App.css";
 
-export default function App() {
-  // All chats
-  const [chats, setChats] = useState(() => {
-    const saved = localStorage.getItem("freebot_chats");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Which chat is open
-  const [currentChatId, setCurrentChatId] = useState(null);
+function App() {
+  const [messages, setMessages] = useState([
+    { sender: "system", text: "Hi 👋 I'm your Free Bot! How can I help you today?" },
+  ]);
   const [input, setInput] = useState("");
-
-  // Auto-save
-  useEffect(() => {
-    localStorage.setItem("freebot_chats", JSON.stringify(chats));
-  }, [chats]);
-
-  // Helpers
-  const currentChat = chats.find((c) => c.id === currentChatId);
-
-  const newChat = () => {
-    const id = Date.now();
-    const newChatObj = { id, title: "New chat", messages: [] };
-    setChats([...chats, newChatObj]);
-    setCurrentChatId(id);
-  };
-
-  const openChat = (id) => setCurrentChatId(id);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    // Update chat with user message
-    const updatedChats = chats.map((chat) => {
-      if (chat.id === currentChatId) {
-        const updated = {
-          ...chat,
-          title:
-            chat.title === "New chat"
-              ? input.slice(0, 25) + (input.length > 25 ? "…" : "")
-              : chat.title,
-          messages: [...chat.messages, { role: "user", content: input }],
-        };
-        return updated;
-      }
-      return chat;
-    });
-
-    setChats(updatedChats);
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setLoading(true);
+    setError("");
 
-    // Get AI response from backend
     try {
-      const res = await fetch(
-        import.meta.env.VITE_API_URL || "https://free-bot-backend.onrender.com/api/chat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: input }),
-        }
-      );
-      const data = await res.json();
-
-      // Append AI message
-      setChats((prev) =>
-        prev.map((chat) =>
-          chat.id === currentChatId
-            ? {
-                ...chat,
-                messages: [
-                  ...chat.messages,
-                  { role: "assistant", content: data.reply || "No response" },
-                ],
-              }
-            : chat
-        )
-      );
+      // ✅ This uses a relative URL so it works both locally & on Render
+      const response = await axios.post("/api/chat", { message: input });
+      const botMessage = { sender: "bot", text: response.data.reply || "No response from bot 🤖" };
+      setMessages((prev) => [...prev, botMessage]);
     } catch (err) {
       console.error(err);
+      setError("⚠️ Error connecting to server.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="chatgpt-layout">
-      {/* Sidebar */}
-      <aside className="chatgpt-sidebar">
-        <button onClick={newChat} className="newchat-btn">
-          + New Chat
-        </button>
-        <div className="chat-list">
-          {chats.map((c) => (
-            <div
-              key={c.id}
-              className={`chat-item ${c.id === currentChatId ? "active" : ""}`}
-              onClick={() => openChat(c.id)}
-            >
-              {c.title}
-            </div>
-          ))}
-        </div>
-      </aside>
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") sendMessage();
+  };
 
-      {/* Main Chat Window */}
-      <main className="chatgpt-container">
-        {currentChat ? (
-          <>
-            <div className="messages">
-              {currentChat.messages.map((m, i) => (
-                <div
-                  key={i}
-                  className={`message ${m.role === "user" ? "user" : "assistant"}`}
-                >
-                  {m.content}
-                </div>
-              ))}
-            </div>
-            <div className="input-area">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Message FreeBot..."
-              />
-              <button onClick={sendMessage}>Send</button>
-            </div>
-          </>
-        ) : (
-          <div className="empty-state">
-            <h2>Welcome 👋</h2>
-            <p>Select a chat or start a new one.</p>
+  return (
+    <div className="chat-container">
+      <h1>💬 Free Bot</h1>
+      <p className="byline">By <strong>Akin S. Sokpah</strong></p>
+
+      <div className="chat-box">
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`message ${msg.sender === "user" ? "user" : msg.sender === "bot" ? "bot" : "system"}`}
+          >
+            {msg.text}
           </div>
-        )}
-      </main>
+        ))}
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      <div className="input-area">
+        <input
+          type="text"
+          placeholder="Type your message..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+        />
+        <button onClick={sendMessage} disabled={loading}>
+          {loading ? "..." : "Send"}
+        </button>
+      </div>
     </div>
   );
 }
+
+export default App;
