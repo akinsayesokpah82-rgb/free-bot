@@ -2,9 +2,10 @@
   "name": "free-bot-frontend",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
+    "build": "npm install vite && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
