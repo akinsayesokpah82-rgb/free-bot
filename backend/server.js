@@ -1,40 +1,42 @@
 import express from "express";
-import fetch from "node-fetch";
 import cors from "cors";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ Simple AI-like response system
 app.post("/api/chat", async (req, res) => {
-  try {
-    const { message } = req.body;
+  const { message } = req.body;
 
-    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: "You are Free Bot, an assistant created by Akin S. Sokpah." },
-          { role: "user", content: message }
-        ]
-      })
-    });
-
-    const data = await openaiRes.json();
-    res.json({ reply: data.choices?.[0]?.message?.content || "No response." });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ reply: "Server error, please try again." });
+  if (!message || message.trim() === "") {
+    return res.json({ reply: "Please say something 😅" });
   }
+
+  // Example smart replies (you can customize or connect real AI)
+  let reply = "";
+
+  if (message.toLowerCase().includes("hello")) {
+    reply = "👋 Hi there! I’m FreeBot, your AI assistant.";
+  } else if (message.toLowerCase().includes("who created you")) {
+    reply = "I was proudly created by Akin S. Sokpah from Liberia 🇱🇷";
+  } else if (message.toLowerCase().includes("jesus")) {
+    reply = "🙌 Jesus is Lord! Would you like a Bible verse?";
+  } else if (message.toLowerCase().includes("bible verse")) {
+    reply = "📖 John 3:16 — For God so loved the world that He gave His only Son.";
+  } else if (message.toLowerCase().includes("education")) {
+    reply = "🎓 Education is the key to success. I can help you study too!";
+  } else {
+    reply = `🤖 You said: "${message}" — and I’m still learning to understand you better!`;
+  }
+
+  res.json({ reply });
 });
 
+// ✅ Root route (for testing)
 app.get("/", (req, res) => {
   res.send("🧠 Free Bot backend is running successfully!");
 });
 
-app.listen(10000, () => console.log("✅ Backend running on port 10000"));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
