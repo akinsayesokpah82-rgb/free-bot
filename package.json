@@ -1,11 +1,12 @@
 {
   "name": "free-bot-fullstack",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "scripts": {
-    "postinstall": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "install": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd frontend && npm run build",
     "start": "node backend/server.js"
   },
   "engines": {
-    "node": "22.x"
+    "node": ">=18"
   }
 }
