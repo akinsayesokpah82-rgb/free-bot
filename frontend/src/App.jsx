@@ -2,62 +2,57 @@ import React, { useState } from "react";
 
 export default function App() {
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "👋 Hello! I'm Free Bot. How can I help you today?" },
+    { sender: "bot", text: "👋 Welcome to Free Bot! Ask me anything." }
   ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
+  const sendMessage = async () => {
     if (!input.trim()) return;
-
-    const userMessage = { role: "user", content: input };
-    const updatedMessages = [...messages, userMessage];
-    setMessages(updatedMessages);
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setLoading(true);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
-      });
-      const data = await res.json();
-      const botReply =
-        data.choices?.[0]?.message?.content ||
-        "⚠️ Sorry, something went wrong. Try again later.";
-      setMessages([...updatedMessages, { role: "assistant", content: botReply }]);
-    } catch (err) {
-      setMessages([
-        ...updatedMessages,
-        { role: "assistant", content: "⚠️ Connection error. Please try again." },
+    // Simulated bot reply (you can connect this to your backend later)
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: `🤖 You said: ${userMessage.text}` }
       ]);
-    } finally {
-      setLoading(false);
-    }
+    }, 800);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") sendMessage();
   };
 
   return (
-    <div className="app">
-      <header>🤖 Free Bot <span>Created by Akin S. Sokpah</span></header>
-      <main>
-        {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
-            <p>{m.content}</p>
+    <div className="chat-container">
+      <div className="chat-header">
+        <h2>💬 Free Bot</h2>
+        <p>By Akin S Sokpah</p>
+      </div>
+
+      <div className="chat-box">
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className={`message ${msg.sender === "user" ? "user" : "bot"}`}
+          >
+            {msg.text}
           </div>
         ))}
-        {loading && <div className="msg assistant"><p>Thinking...</p></div>}
-      </main>
-      <form onSubmit={sendMessage}>
+      </div>
+
+      <div className="input-area">
         <input
           type="text"
-          placeholder="Type your message..."
           value={input}
+          placeholder="Type a message..."
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
         />
-        <button type="submit">Send</button>
-      </form>
+        <button onClick={sendMessage}>Send</button>
+      </div>
     </div>
   );
 }
