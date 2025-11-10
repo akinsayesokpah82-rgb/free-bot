@@ -1,14 +1,11 @@
 {
   "name": "free-bot-fullstack",
-  "version": "1.0.0",
-  "type": "module",
+  "version": "1.0.1",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
-    "start": "npm install && node backend/server.js"
+    "postinstall": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "start": "node backend/server.js"
   },
-  "dependencies": {
-    "express": "^4.19.2",
-    "cors": "^2.8.5",
-    "openai": "^4.68.4"
+  "engines": {
+    "node": "22.x"
   }
 }
