@@ -1,60 +1,44 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-export default function Chat({ onSend, user, messages }) {
-  const [input, setInput] = useState("");
+export default function Chat({ history, setHistory }) {
+  const [message, setMessage] = useState("");
+  const [reply, setReply] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const newMessage = { sender: "user", text: input, time: Date.now() };
-    onSend(newMessage);
-
-    // show user message instantly
-    const response = await fetch("/api/chat", {
+  const sendMessage = async () => {
+    if (!message.trim()) return;
+    setReply("...");
+    const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input }),
+      body: JSON.stringify({ message })
     });
-    const data = await response.json();
-    const botMessage = { sender: "bot", text: data.reply, time: Date.now() };
-    onSend(botMessage);
-
-    setInput("");
+    const data = await res.json();
+    setReply(data.reply);
+    setHistory([...history, { user: message, bot: data.reply }]);
+    setMessage("");
   };
 
   return (
-    <div className="bg-white p-4 rounded shadow-md">
-      <div className="h-96 overflow-y-auto mb-4">
-        {messages.map((m, i) => (
-          <div key={i} className={m.sender === "user" ? "text-right" : "text-left"}>
-            <p
-              className={
-                m.sender === "user"
-                  ? "inline-block bg-blue-500 text-white px-3 py-2 rounded-lg mb-2"
-                  : "inline-block bg-gray-200 px-3 py-2 rounded-lg mb-2"
-              }
-            >
-              {m.text}
-            </p>
+    <div className="flex flex-col w-full bg-gray-100">
+      <div className="flex-1 overflow-y-auto p-4">
+        {history.map((h, i) => (
+          <div key={i} className="mb-4">
+            <p className="font-semibold">You: {h.user}</p>
+            <p className="text-gray-700">Bot: {h.bot}</p>
           </div>
         ))}
       </div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <div className="p-4 bg-white flex">
         <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          className="flex-grow border p-2 rounded"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="flex-1 border p-2 rounded"
           placeholder="Type a message..."
         />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
+        <button onClick={sendMessage} className="ml-2 px-4 py-2 bg-blue-600 text-white rounded">
           Send
         </button>
-      </form>
+      </div>
     </div>
   );
 }
