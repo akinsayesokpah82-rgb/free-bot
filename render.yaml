@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: free-bot
+    env: node
+    plan: starter
+    buildCommand: 'cd frontend && npm ci && npm run build && cd ../backend && npm ci'
+    startCommand: 'cd backend && PORT=$PORT npm start'
