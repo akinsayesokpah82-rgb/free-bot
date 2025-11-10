@@ -1,43 +1,40 @@
 import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-import dotenv from "dotenv";
 import fetch from "node-fetch";
+import cors from "cors";
 
-dotenv.config();
 const app = express();
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use(cors());
+app.use(express.json());
 
-// Serve built frontend
-app.use(express.static(path.join(__dirname, "../frontend/dist")));
+app.post("/api/chat", async (req, res) => {
+  try {
+    const { message } = req.body;
 
-// API route
-app.post("/api/chat", express.json(), async (req, res) => {
-  const { message } = req.body;
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are Free Bot, an assistant created by Akin S. Sokpah." },
+          { role: "user", content: message }
+        ]
+      })
+    });
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are Free Bot created by Akin S. Sokpah." },
-        { role: "user", content: message },
-      ],
-    }),
-  });
-
-  const data = await response.json();
-  res.json(data);
+    const data = await openaiRes.json();
+    res.json({ reply: data.choices?.[0]?.message?.content || "No response." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ reply: "Server error, please try again." });
+  }
 });
 
-// Serve frontend for all routes
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+app.get("/", (req, res) => {
+  res.send("🧠 Free Bot backend is running successfully!");
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`✅ Free Bot running on port ${PORT}`));
+app.listen(10000, () => console.log("✅ Backend running on port 10000"));
