@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import OpenAI from "openai";
 
 dotenv.config();
 const app = express();
@@ -15,22 +16,42 @@ const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, "../frontend/dist");
 app.use(express.static(frontendPath));
 
+// ✅ Initialize OpenAI client
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// ✅ AI Chat endpoint
 app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
-    // Placeholder AI response (for now)
-    const reply = `🤖 Free Bot says: You said "${message}"`;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Free Bot, an AI created and owned by Akin S. Sokpah from Liberia. Always be kind, clear, and helpful.",
+        },
+        { role: "user", content: message },
+      ],
+    });
+
+    const reply = completion.choices[0].message.content;
     res.json({ reply });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Chat error:", err);
+    res.status(500).json({ error: "Error connecting to AI service." });
   }
 });
 
+// Test route
 app.get("/api", (req, res) => {
   res.json({ message: "🧠 Free Bot backend connected successfully!" });
 });
 
+// Serve frontend
 app.get("*", (req, res) => {
   res.sendFile(path.join(frontendPath, "index.html"));
 });
