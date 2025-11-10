@@ -1,41 +1,44 @@
-// backend/server.js
 import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import OpenAI from "openai";
 
-const app = express();
-app.use(express.json());
-app.use(cors());
-
-// Helper to get correct __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const app = express();
 
-// === Serve Frontend Build ===
-const frontendPath = path.join(__dirname, "frontend", "dist");
-app.use(express.static(frontendPath));
+app.use(cors());
+app.use(express.json());
 
-// === Example API Endpoint ===
+// --- serve built frontend ---
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// --- chat endpoint ---
 app.post("/api/chat", async (req, res) => {
   try {
     const { message } = req.body;
-
-    // Fake AI reply (you can connect real API here later)
-    const reply = `🤖 AI: You said "${message}". Nice to meet you!`;
-
-    res.json({ reply });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Free Bot, an intelligent assistant created by Akin S. Sokpah.",
+        },
+        { role: "user", content: message },
+      ],
+    });
+    res.json({ reply: completion.choices[0].message.content });
   } catch (err) {
-    console.error("Chat Error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error(err);
+    res.status(500).json({ reply: "⚠️ Server error." });
   }
 });
 
-// === Catch-all: send index.html for all non-API routes ===
-app.get("*", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"));
-});
-
-// === Start server ===
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🧠 Free Bot backend running on port ${PORT}`));
+const port = process.env.PORT || 10000;
+app.listen(port, () => console.log(`🧠 Free Bot backend running on ${port}`));
