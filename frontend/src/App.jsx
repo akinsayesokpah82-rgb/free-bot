@@ -1,94 +1,137 @@
-import React, { useState, useEffect, useRef } from "react";
-import "./style.css";
+import React, { useState, useEffect } from "react";
+import "./App.css";
 
 export default function App() {
-  const [messages, setMessages] = useState([
-    { sender: "bot", text: "👋 Hello! I'm Free Bot, created by Akin S. Sokpah. How can I help you today?" }
-  ]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
+  // All chats
+  const [chats, setChats] = useState(() => {
+    const saved = localStorage.getItem("freebot_chats");
+    return saved ? JSON.parse(saved) : [];
+  });
 
+  // Which chat is open
+  const [currentChatId, setCurrentChatId] = useState(null);
+  const [input, setInput] = useState("");
+
+  // Auto-save
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    localStorage.setItem("freebot_chats", JSON.stringify(chats));
+  }, [chats]);
+
+  // Helpers
+  const currentChat = chats.find((c) => c.id === currentChatId);
+
+  const newChat = () => {
+    const id = Date.now();
+    const newChatObj = { id, title: "New chat", messages: [] };
+    setChats([...chats, newChatObj]);
+    setCurrentChatId(id);
+  };
+
+  const openChat = (id) => setCurrentChatId(id);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const userMessage = { sender: "user", text: input };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
 
+    // Update chat with user message
+    const updatedChats = chats.map((chat) => {
+      if (chat.id === currentChatId) {
+        const updated = {
+          ...chat,
+          title:
+            chat.title === "New chat"
+              ? input.slice(0, 25) + (input.length > 25 ? "…" : "")
+              : chat.title,
+          messages: [...chat.messages, { role: "user", content: input }],
+        };
+        return updated;
+      }
+      return chat;
+    });
+
+    setChats(updatedChats);
+    setInput("");
+
+    // Get AI response from backend
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL || window.location.origin}/api/chat`,
+        import.meta.env.VITE_API_URL || "https://free-bot-backend.onrender.com/api/chat",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userMessage.text }),
+          body: JSON.stringify({ message: input }),
         }
       );
-
       const data = await res.json();
-      setMessages((prev) => [...prev, { sender: "bot", text: data.reply }]);
+
+      // Append AI message
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat.id === currentChatId
+            ? {
+                ...chat,
+                messages: [
+                  ...chat.messages,
+                  { role: "assistant", content: data.reply || "No response" },
+                ],
+              }
+            : chat
+        )
+      );
     } catch (err) {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "⚠️ Unable to connect. Please try again." },
-      ]);
-    } finally {
-      setLoading(false);
+      console.error(err);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") sendMessage();
-  };
-
   return (
-    <div className="chatgpt-container">
-      <header className="chatgpt-header">💬 Free Bot (GPT Style)</header>
-
-      <div className="chatgpt-chatbox">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`chatgpt-message ${
-              msg.sender === "user" ? "chatgpt-user" : "chatgpt-bot"
-            }`}
-          >
-            <div className="chatgpt-avatar">
-              {msg.sender === "user" ? "🧑" : "🤖"}
+    <div className="chatgpt-layout">
+      {/* Sidebar */}
+      <aside className="chatgpt-sidebar">
+        <button onClick={newChat} className="newchat-btn">
+          + New Chat
+        </button>
+        <div className="chat-list">
+          {chats.map((c) => (
+            <div
+              key={c.id}
+              className={`chat-item ${c.id === currentChatId ? "active" : ""}`}
+              onClick={() => openChat(c.id)}
+            >
+              {c.title}
             </div>
-            <div className="chatgpt-text">{msg.text}</div>
-          </div>
-        ))}
+          ))}
+        </div>
+      </aside>
 
-        {loading && (
-          <div className="chatgpt-message chatgpt-bot">
-            <div className="chatgpt-avatar">🤖</div>
-            <div className="chatgpt-text typing">
-              <span></span><span></span><span></span>
+      {/* Main Chat Window */}
+      <main className="chatgpt-container">
+        {currentChat ? (
+          <>
+            <div className="messages">
+              {currentChat.messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`message ${m.role === "user" ? "user" : "assistant"}`}
+                >
+                  {m.content}
+                </div>
+              ))}
             </div>
+            <div className="input-area">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Message FreeBot..."
+              />
+              <button onClick={sendMessage}>Send</button>
+            </div>
+          </>
+        ) : (
+          <div className="empty-state">
+            <h2>Welcome 👋</h2>
+            <p>Select a chat or start a new one.</p>
           </div>
         )}
-
-        <div ref={chatEndRef} />
-      </div>
-
-      <div className="chatgpt-input">
-        <input
-          type="text"
-          placeholder="Message Free Bot..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
-        />
-        <button onClick={sendMessage} disabled={loading}>
-          Send
-        </button>
-      </div>
+      </main>
     </div>
   );
 }
