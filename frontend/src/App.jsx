@@ -1,15 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import "./style.css";
 
 export default function App() {
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "👋 Hi! I’m Free Bot. How can I help you today?" }
+    { sender: "bot", text: "👋 Hello! I'm Free Bot, created by Akin S. Sokpah. How can I help you today?" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-
     const userMessage = { sender: "user", text: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
@@ -30,7 +35,7 @@ export default function App() {
     } catch (err) {
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "⚠️ Error contacting server." },
+        { sender: "bot", text: "⚠️ Unable to connect. Please try again." },
       ]);
     } finally {
       setLoading(false);
@@ -42,29 +47,41 @@ export default function App() {
   };
 
   return (
-    <div className="chat-container">
-      <div className="chat-header">
-        <h2>💬 Free Bot</h2>
-        <p>By Akin S. Sokpah</p>
-      </div>
+    <div className="chatgpt-container">
+      <header className="chatgpt-header">💬 Free Bot (GPT Style)</header>
 
-      <div className="chat-box">
+      <div className="chatgpt-chatbox">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`message ${msg.sender === "user" ? "user" : "bot"}`}
+            className={`chatgpt-message ${
+              msg.sender === "user" ? "chatgpt-user" : "chatgpt-bot"
+            }`}
           >
-            {msg.text}
+            <div className="chatgpt-avatar">
+              {msg.sender === "user" ? "🧑" : "🤖"}
+            </div>
+            <div className="chatgpt-text">{msg.text}</div>
           </div>
         ))}
-        {loading && <div className="message bot">⌛ Thinking...</div>}
+
+        {loading && (
+          <div className="chatgpt-message chatgpt-bot">
+            <div className="chatgpt-avatar">🤖</div>
+            <div className="chatgpt-text typing">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        )}
+
+        <div ref={chatEndRef} />
       </div>
 
-      <div className="input-area">
+      <div className="chatgpt-input">
         <input
           type="text"
+          placeholder="Message Free Bot..."
           value={input}
-          placeholder="Type a message..."
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyPress}
         />
