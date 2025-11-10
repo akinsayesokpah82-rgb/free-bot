@@ -1,81 +1,63 @@
-import { useState } from "react";
-import "./App.css";
+import React, { useState } from "react";
 
 export default function App() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
-  const [chats, setChats] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function newChat() {
-    const newSession = { id: Date.now(), history: [] };
-    setChats((c) => [newSession, ...c]);
-    setMessages([]);
-    setActiveChat(newSession.id);
-  }
-
-  async function handleSend() {
+  const sendMessage = async () => {
     if (!input.trim()) return;
-    const userMsg = { role: "user", text: input };
-    setMessages((m) => [...m, userMsg]);
+    const userMessage = { role: "user", content: input };
+    setMessages([...messages, userMessage]);
     setInput("");
-
+    setLoading(true);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: input })
       });
       const data = await res.json();
-      const botMsg = { role: "bot", text: data.reply };
-      setMessages((m) => [...m, botMsg]);
+      const botMessage = { role: "assistant", content: data.reply };
+      setMessages((prev) => [...prev, botMessage]);
     } catch {
-      setMessages((m) => [
-        ...m,
-        { role: "bot", text: "⚠️ Failed to connect to backend." },
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "⚠️ Error connecting to server." }
       ]);
     }
-  }
+    setLoading(false);
+  };
 
   return (
-    <div className="layout">
-      <aside className="sidebar">
-        <h2>💬 Free Bot</h2>
-        <button onClick={newChat}>＋ New Chat</button>
-        <div className="chat-list">
-          {chats.map((chat) => (
-            <div
-              key={chat.id}
-              className={chat.id === activeChat ? "chat-item active" : "chat-item"}
-              onClick={() => {
-                setActiveChat(chat.id);
-                setMessages(chat.history);
-              }}
-            >
-              Chat {new Date(chat.id).toLocaleTimeString()}
-            </div>
-          ))}
-        </div>
-        <div className="footer">By Akin S. Sokpah</div>
-      </aside>
-
-      <main className="chat-area">
-        <div className="chat-box">
-          {messages.map((msg, i) => (
-            <div key={i} className={`msg ${msg.role}`}>{msg.text}</div>
-          ))}
-        </div>
-
-        <div className="input-box">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Type your message..."
-          />
-          <button onClick={handleSend}>Send</button>
-        </div>
-      </main>
+    <div style={{ fontFamily: "sans-serif", padding: "20px", maxWidth: 700, margin: "auto" }}>
+      <h2>💬 Free Bot</h2>
+      <p><strong>By Akin S. Sokpah</strong></p>
+      <div style={{
+        border: "1px solid #ccc",
+        borderRadius: "8px",
+        padding: "10px",
+        height: "400px",
+        overflowY: "auto",
+        background: "#fafafa"
+      }}>
+        {messages.map((m, i) => (
+          <div key={i} style={{ marginBottom: "10px" }}>
+            <strong>{m.role === "user" ? "You" : "Bot"}:</strong> {m.content}
+          </div>
+        ))}
+        {loading && <div>⏳ Thinking...</div>}
+      </div>
+      <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
+        <input
+          style={{ flex: 1, padding: "8px" }}
+          value={input}
+          placeholder="Type a message..."
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+        />
+        <button onClick={sendMessage}>Send</button>
+      </div>
     </div>
   );
 }
