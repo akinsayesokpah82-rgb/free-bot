@@ -5,27 +5,24 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend dist
+// Static frontend
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
+  res.json({ message: "Backend is running successfully ✅" });
+});
+
+app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 
-// API example
-app.post("/api/chat", async (req, res) => {
-  const { message } = req.body;
-  res.json({ reply: `Bot: You said "${message}"` });
-});
-
-app.listen(PORT, () => console.log(`🧠 Free Bot running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
